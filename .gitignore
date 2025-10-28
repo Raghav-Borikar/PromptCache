@@ -10,3 +10,7 @@ __pycache__/
 
 # API key
 .env
+
+# Ignore large binary and data files
+*.bin
+documents.json

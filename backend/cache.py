@@ -21,40 +21,48 @@ except redis.exceptions.ConnectionError as e:
     redis_client = None
 
 def get_cached_result(prompt: str):
-    """Checks for a semantically similar prompt in the cache."""
-    if not redis_client:
-        return None
-
+    """
+    Checks for a semantically similar prompt in the cache.
+    If found, returns the PREVIOUSLY GENERATED ANSWER.
+    """
+    if not redis_client: return None
     prompt_embedding = embedder.get_embedding(prompt)
     
-    # Iterate through all cached prompts
     for key in redis_client.keys("prompt:*"):
-        cached_data_json = redis_client.get(key)
-        cached_data = json.loads(cached_data_json)
-        
+        cached_data = json.loads(redis_client.get(key))
         cached_embedding = np.array(cached_data['embedding']).astype('float32')
         
-        # Calculate Cosine Similarity
-        similarity = np.dot(prompt_embedding, cached_embedding) / (np.linalg.norm(prompt_embedding) * np.linalg.norm(cached_embedding))
+        # --- MODIFICATION HERE ---
+        # Calculate norms
+        prompt_norm = np.linalg.norm(prompt_embedding)
+        cached_norm = np.linalg.norm(cached_embedding)
+        
+        # Add a small epsilon to prevent division by zero
+        epsilon = 1e-9
+        
+        # Calculate Cosine Similarity safely
+        similarity = np.dot(prompt_embedding, cached_embedding) / ((prompt_norm * cached_norm) + epsilon)
         
         if similarity > SIMILARITY_THRESHOLD:
-            print(f"CACHE HIT! Prompt similar to '{key.split(':')[1]}'. Similarity: {similarity:.2f}")
-            return cached_data['results']
+            print(f"CACHE HIT! Similarity: {similarity:.2f}")
+            # IMPORTANT: Return the whole dictionary now
+            return cached_data
             
     print("CACHE MISS!")
     return None
 
-def set_cached_result(prompt: str, results: list):
-    """Stores a new prompt and its retrieved results in the cache."""
-    if not redis_client:
-        return
-
+def set_cached_result(prompt: str, context: list, generated_answer: str):
+    """
+    Stores a new prompt, its context, and the final generated answer.
+    """
+    if not redis_client: return
     prompt_embedding = embedder.get_embedding(prompt)
     key = f"prompt:{prompt}"
     
     data_to_cache = {
         'embedding': prompt_embedding.tolist(),
-        'results': results
+        'results': context,
+        'generated_answer': generated_answer # NEW: Store the answer
     }
     
     redis_client.set(key, json.dumps(data_to_cache))

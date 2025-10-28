@@ -44,9 +44,12 @@ if submitted and prompt:
                 
                 # Display results
                 st.success(f"Query completed in **{data['latency_ms']} ms**. Data sourced from **{data['source'].upper()}**.")
-                st.subheader("Retrieved Context:")
+                st.subheader("Generated Answer:")
+                st.markdown(data['generated_answer'])
+
+                st.subheader("Retrieved Sources:") # Renamed for clarity
                 for i, res in enumerate(data['results']):
-                    with st.expander(f"Chunk {i+1} | Source: {res['source']}"):
+                    with st.expander(f"Source {i+1}: {res['source']}"):
                         st.markdown(f"*{res['text']}*")
             else:
                 st.error(f"API Error: {response.status_code} - {response.text}")
@@ -55,7 +58,7 @@ if submitted and prompt:
 
 # --- Sidebar for Metrics ---
 st.sidebar.header("📊 System Metrics")
-if st.session_state.total_queries > 0:
+if st.session_state.latencies:
     hit_rate = (st.session_state.cache_hits / st.session_state.total_queries) * 100
     avg_latency = sum(st.session_state.latencies) / len(st.session_state.latencies)
     

@@ -8,6 +8,8 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
+    env_file: # <--- ADD THIS SECTION
+      - ./.env
     environment:
       - REDIS_HOST=redis
       - MLFLOW_TRACKING_URI=http://mlflow:5000 
@@ -47,6 +49,7 @@ services:
       - "1000:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml # Mount the config file
+    
 
   # NEW: Grafana Visualization Service
   grafana:

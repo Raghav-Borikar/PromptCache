@@ -7,3 +7,6 @@ promptcache/
 # Python cache files
 __pycache__/
 *.pyc
+
+# API key
+.env

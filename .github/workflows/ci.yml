@@ -21,7 +21,7 @@ jobs:
 
       - name: Run a simple health check
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 15 # Give services time to start
           # Test if the backend docs are accessible
           curl -f http://localhost:8000/docs

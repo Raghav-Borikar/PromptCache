@@ -29,7 +29,7 @@ Data ingestion and indexing are handled by preliminary scripts.
 ```mermaid
 flowchart TD
     subgraph Docker_Environment [Docker Environment]
-        A[Frontend Service<br/>(Streamlit)] -->|HTTP /query| B[Backend Service (FastAPI)]
+        A[Frontend Service (Streamlit)] -->|HTTP /query| B[Backend Service (FastAPI)]
         B -->|Cache Check| C[Cache Layer(Redis)]
         C -->|Cache Miss| D[Retriever Layer (SentenceTransformer + FAISS)]
         D -->|Results| C

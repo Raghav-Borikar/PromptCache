@@ -26,26 +26,14 @@ The knowledge base is powered by the text of the *Harry Potter* book series.
 The system is composed of **three main containerized services** that work together:  
 a frontend UI, a backend API, and a Redis cache.  
 Data ingestion and indexing are handled by preliminary scripts.
-```
-+-----------------------------------------------------------------------+
-| Docker Environment |
-| |
-| +-----------------------+ +-----------------------+ |
-| | Frontend Service | | Backend Service | |
-| | (Streamlit Container) |---->| (FastAPI /query) | |
-| +-----------------------+ +-----------+-----------+ |
-| | |
-| +-----------------------|------------------+ |
-| | v (Cache Miss) | |
-| | | |
-| +-----------------------+ +-----------------------+ |
-| | Cache Layer |<--->| Retriever Layer | |
-| | (Redis Container) | | (SentenceTransformer | |
-| | - Stores prompt | | + FAISS Index) | |
-| | embeddings & results| | - Searches documents | |
-| +-----------------------+ +-----------------------+ |
-| |
-+-----------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph Docker_Environment [Docker Environment]
+        A[Frontend Service<br/>(Streamlit)] -->|HTTP /query| B[Backend Service<br/>(FastAPI)]
+        B -->|Cache Check| C[Cache Layer<br/>(Redis)]
+        C -->|Cache Miss| D[Retriever Layer<br/>(SentenceTransformer + FAISS)]
+        D -->|Results| C
+    end
 ```
 ---
 

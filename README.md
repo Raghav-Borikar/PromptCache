@@ -26,7 +26,7 @@ The knowledge base is powered by the text of the *Harry Potter* book series.
 The system is composed of **three main containerized services** that work together:  
 a frontend UI, a backend API, and a Redis cache.  
 Data ingestion and indexing are handled by preliminary scripts.
-
+```
 +-----------------------------------------------------------------------+
 | Docker Environment |
 | |
@@ -46,7 +46,7 @@ Data ingestion and indexing are handled by preliminary scripts.
 | +-----------------------+ +-----------------------+ |
 | |
 +-----------------------------------------------------------------------+
-
+```
 ---
 
 ### ⚙️ How the Semantic Cache Works
@@ -82,6 +82,7 @@ Data ingestion and indexing are handled by preliminary scripts.
 ---
 
 ## 📁 Project Structure
+```
 PromptCache/
 ├── backend/
 │ ├── Dockerfile # Recipe for backend container
@@ -107,7 +108,7 @@ PromptCache/
 ├── build_index.py # FAISS index builder
 ├── docker-compose.yml # Multi-container orchestration
 └── README.md # This file
-
+```
 ---
 
 ## 🚀 Getting Started

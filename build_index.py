@@ -8,7 +8,7 @@ from sentence_transformers import SentenceTransformer
 DATA_DIR = "data"
 INDEX_FILE = os.path.join(DATA_DIR, "faiss_index.bin")
 DOCUMENTS_MAP_FILE = os.path.join(DATA_DIR, "documents.json")
-MODEL_NAME = 'all-MiniLM-L6-v2' # A good starting model
+MODEL_NAME = 'thenlper/gte-large' # A good starting model
 
 def load_all_documents():
     """Loads all processed JSON files from the data directory."""

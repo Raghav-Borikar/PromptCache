@@ -51,28 +51,60 @@ This hybrid caching mechanism can reduce query latency by **over 60%** and signi
 
 ## 4. System Architecture
 
+The project is composed of two main architectural layers: the **Core Application Flow** for handling user queries, and the **Observability Stack** for monitoring and experiment tracking.
+
+### 1. Core Application Architecture
+
+This diagram illustrates the lifecycle of a single user query, highlighting the semantic caching logic.
+
 ```mermaid
 graph TD
-    subgraph User_Interface
-        A[User] --> B[Frontend: Streamlit]
+    subgraph User_Interaction
+        A[User Query] --> B[Frontend: Streamlit]
     end
 
-    subgraph Backend_Services
-        B --> C[Backend API: FastAPI]
-        C -->|1. Check for similar prompt| D[Cache: Redis]
-        D -->|2a. Cache Hit| C
-        D -->|2b. Cache Miss| E[Retriever: FAISS]
-        E -->|3. Retrieved Context| F[Generator: LLM API]
-        F -->|4. Generated Answer| C
-        C -->|5. Store new answer| D
+    subgraph Backend_Logic_FastAPI
+        B --> C[API Endpoint: /query]
+        C -->|1. Create embedding for prompt| D[Cache: Redis]
+        D -->|2a. CACHE HIT: Found similar prompt| C
+        C -->|6a. Return cached answer| B
+
+        D -->|2b. CACHE MISS: No similar prompt| E[Retriever: FAISS]
+        E -->|3. Retrieve relevant context| F[Generator: LLM API]
+        F -->|4. Synthesize final answer| C
+        C -->|5. Store new prompt, context, and answer| D
+        C -->|6b. Return newly generated answer| B
     end
 
-    subgraph MLOps_and_Monitoring
-        C --> G[MLflow Tracking Server]
-        H[Prometheus] -->|Scrapes /metrics| C
-        I[Grafana] -->|Visualizes metrics| H
-    end
+    B -->|7. Display final answer and sources| A
 ```
+
+### 2. MLOps & Monitoring Architecture
+
+This diagram shows how the observability services run alongside and interact with the backend API to provide insights into the system's performance and behavior.
+
+```mermaid
+graph TD
+    subgraph Core_Services
+        B[Backend API - FastAPI]
+    end
+
+    subgraph Observability_Stack
+        C[MLflow Tracking Server]
+        D[Prometheus Server]
+        E[Grafana Dashboard]
+    end
+
+    B -->|Logs prompt, latency, cache hit| C
+    D -->|Scrapes metrics endpoint every 15s| B
+    E -->|Queries and visualizes data from| D
+```
+
+*   **MLflow Tracking:** On every API call, the FastAPI backend logs key parameters (like the prompt) and metrics (latency, cache hit status) to the **MLflow server**. This is invaluable for tracking experiments and comparing the performance of different models or prompts over time.
+*   **Prometheus Monitoring:** The backend exposes a `/metrics` endpoint. The **Prometheus server** periodically "scrapes" this endpoint to collect real-time data on request rates, error counts, and latency distributions.
+*   **Grafana Visualization:** **Grafana** connects to Prometheus as a data source, allowing you to build live dashboards to visualize the system's health and performance over time.
+
+This two-part architecture provides a robust, production-ready RAG system that is not only functional but also fully observable.
 
 ---
 

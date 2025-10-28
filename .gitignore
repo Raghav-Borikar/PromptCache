@@ -1,0 +1,9 @@
+# Python virtual environment
+promptcache/
+
+# DVC local cache (important!)
+.dvc/cache
+
+# Python cache files
+__pycache__/
+*.pyc

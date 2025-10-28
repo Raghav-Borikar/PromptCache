@@ -1,189 +1,230 @@
-# 🧠 PromptCache: A Latency-Optimized RAG System
+# PromptCache: A Latency-Optimized RAG System
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+**PromptCache** is a complete, containerized **Retrieval-Augmented Generation (RAG)** system designed to reduce latency and API costs.  
+It introduces a **dynamic semantic caching layer** that intercepts user queries, checks for similarity against past prompts, and serves cached responses for similar questions — effectively bypassing redundant retrieval and generation steps.
 
-**PromptCache** is a complete, end-to-end **Retrieval-Augmented Generation (RAG)** system designed to reduce latency and operational costs by implementing a novel **semantic caching layer**.  
-Traditional RAG systems perform redundant, costly vector database queries even for semantically similar prompts.  
-PromptCache intelligently intercepts these queries, reusing previously retrieved context to deliver answers up to **95% faster** while significantly reducing computational load.
-
-This project is built from scratch with a strong focus on **MLOps best practices**, including **data versioning with DVC** and **full containerization** with **Docker and Docker Compose**.  
-The knowledge base is powered by the text of the *Harry Potter* book series.
+The project is built using a modern **MLOps stack**, featuring Docker for containerization, DVC for data versioning, MLflow for experiment tracking, and Prometheus/Grafana for real-time monitoring.
 
 ---
 
-## ✨ Key Features
+## 1. Problem Statement
 
-- **Full RAG Pipeline:** Ingests text from PDF documents, creates vector embeddings, and retrieves relevant context to answer user queries.  
-- **Novel Semantic Caching:** Utilizes a Redis-based cache that stores prompt embeddings. If a new query is semantically similar (cosine similarity > 0.95) to a cached one, it returns the stored context instantly, bypassing the expensive vector search.  
-- **Containerized Services:** The entire application stack (FastAPI backend, Redis cache, Streamlit frontend) is orchestrated by Docker Compose, allowing for a one-command launch.  
-- **MLOps Ready:** Implements version control for both code (Git) and data (DVC), ensuring reproducibility and a solid foundation for future CI/CD and deployment.  
-- **Interactive Frontend:** A user-friendly web interface built with Streamlit allows easy interaction and displays real-time performance metrics like cache hit rate and latency.
+Standard RAG systems perform a full vector database lookup for every incoming query.  
+This approach is inefficient and costly, especially when users ask semantically similar or repeated questions.
+
+Each query triggers the same sequence of embedding → retrieval → generation, leading to:
+- Higher latency
+- Unnecessary compute usage
+- Increased API expenses for LLM calls
 
 ---
 
-## 🏗️ Architecture
+## 2. Solution Overview
 
-The system is composed of **three main containerized services** that work together:  
-a frontend UI, a backend API, and a Redis cache.  
-Data ingestion and indexing are handled by preliminary scripts.
+**PromptCache** introduces an intelligent caching layer between the user interface and the RAG backend pipeline.
+
+1. **Embedding Generation:**  
+   Each query is first transformed into an embedding vector using a SentenceTransformer model (GTE-Large).
+
+2. **Cache Lookup (Redis):**  
+   The system checks for previously seen prompts with high cosine similarity.
+
+   - **Cache Hit:** If similarity > 0.95, the cached response is served instantly.
+   - **Cache Miss:** If not found, the query proceeds through the RAG pipeline, and the result is cached for future use.
+
+This hybrid caching mechanism can reduce query latency by **over 60%** and significantly lower API costs.
+
+---
+
+## 3. Key Features
+
+| Feature | Description |
+|----------|--------------|
+| **Full RAG Pipeline** | Processes PDF documents, creates FAISS-based vector indexes, and uses a Large Language Model (Google Gemini) for synthesis. |
+| **Semantic Caching** | Uses Redis to cache embeddings and generated responses for similar queries. |
+| **Interactive Frontend** | Built with Streamlit for user-friendly query input and visualization. |
+| **Real-Time Monitoring** | Prometheus and Grafana dashboards display metrics such as latency, cache hit rate, and system load. |
+| **MLOps Integration** | Includes DVC for data management, MLflow for experiment tracking, and Docker Compose for orchestration. |
+| **Reproducibility** | Entire system is containerized and deployable with one command. |
+
+---
+
+## 4. System Architecture
+
 ```mermaid
-flowchart TD
-    subgraph Docker_Environment ["Docker Environment"]
-        A["Frontend Service - Streamlit"] -->|"HTTP /query"| B["Backend Service - FastAPI"]
-        B -->|"Cache Check"| C["Cache Layer - Redis"]
-        C -->|"Cache Miss"| D["Retriever Layer - SentenceTransformer + FAISS"]
-        D -->|"Results"| C
+graph TD
+    subgraph "User Interface"
+        A[User] --> B{Frontend (Streamlit)};
+    end
+
+    subgraph "Backend Services"
+        B --> C{Backend API (FastAPI)};
+        C -- "1. Check for similar prompt" --> D[Cache (Redis)];
+        D -- "2a. Cache Hit" --> C;
+        D -- "2b. Cache Miss" --> E[Retriever (FAISS)];
+        E -- "3. Retrieved Context" --> F[Generator (LLM API)];
+        F -- "4. Generated Answer" --> C;
+        C -- "5. Store new answer" --> D;
+    end
+    
+    subgraph "MLOps & Monitoring"
+        C --> G[MLflow Tracking Server];
+        H[Prometheus] -- "Scrapes /metrics" --> C;
+        I[Grafana] -- "Visualizes metrics" --> H;
     end
 ```
----
-
-### ⚙️ How the Semantic Cache Works
-
-#### **1. Cache Miss (First-time or Unique Query)**
-- The user's prompt is received by the FastAPI backend.  
-- The backend checks Redis — no semantically similar prompt is found.  
-- The prompt is converted into a vector embedding.  
-- The FAISS index is searched using this embedding to find top-K relevant text chunks.  
-- The retrieved chunks are returned to the user.  
-- The prompt’s embedding and its retrieved chunks are **stored as a new entry in Redis**.
-
-#### **2. Cache Hit (Similar Subsequent Query)**
-- A new prompt (e.g., “Tell me about Dumbledore”) is received.  
-- The backend checks Redis, generates an embedding for the new prompt, and calculates cosine similarity with all stored embeddings.  
-- If a cached embedding has a **similarity > 0.95**,  
-  the corresponding stored context chunks are **instantly retrieved** and returned, skipping the FAISS search.
 
 ---
 
-## 🛠️ Technology Stack
+## 5. Technology Stack
 
-| Layer | Technology |
-|-------|-------------|
-| **Backend** | FastAPI, Uvicorn |
-| **Frontend** | Streamlit, Pandas |
-| **Caching** | Redis |
-| **Vector Search** | FAISS (Facebook AI) |
-| **Embedding Model** | `all-MiniLM-L6-v2` (Sentence-Transformers) |
-| **Data Processing** | PyPDF |
-| **MLOps & Orchestration** | Git (code), DVC (data), Docker, Docker Compose |
+| Category             | Technology                                                              |
+| -------------------- | ----------------------------------------------------------------------- |
+| **Backend**          | FastAPI, Uvicorn, Python 3.9                                            |
+| **Frontend**         | Streamlit                                                               |
+| **Database & Cache** | Redis                                                                   |
+| **Generative AI**    | Google Generative AI (Gemini)                                           |
+| **Data Processing**  | PyPDF, SentenceTransformers (thenlper/gte-large), FAISS, NumPy          |
+| **MLOps & Tooling**  | Docker, Docker Compose, DVC, MLflow, Prometheus, Grafana, python-dotenv |
 
----
+## 6. Project Structure
 
-## 📁 Project Structure
+The project is organized into distinct modules for clarity and scalability. Key components are containerized for easy deployment.
+
 ```
 PromptCache/
-├── backend/
-│ ├── Dockerfile # Recipe for backend container
-│ ├── requirements.txt # Backend Python dependencies
-│ ├── init.py # Package initialization
-│ ├── main.py # FastAPI application logic
-│ ├── cache.py # Semantic caching with Redis
-│ ├── embedder.py # Handles text embeddings
-│ └── retriever.py # FAISS-based retrieval
 │
-├── data/
-│ ├── book1.pdf # Example source data
-│ ├── book1.json # Processed text chunks
-│ ├── documents.json # Master chunk mapping
-│ └── faiss_index.bin # FAISS vector index
+├── .dvc/               # DVC metadata for tracking large files
+├── .github/workflows/  # (Optional) CI/CD workflows using GitHub Actions
+├── backend/            # Containerized FastAPI application
+│   ├── __init__.py     # Makes 'backend' a Python package
+│   ├── cache.py        # Semantic caching logic with Redis
+│   ├── embedder.py     # Handles text-to-vector embedding
+│   ├── generator.py    # Synthesizes answers using the LLM
+│   ├── main.py         # FastAPI application entrypoint and API routes
+│   ├── retriever.py    # Searches the FAISS index for relevant context
+│   ├── Dockerfile      # Instructions to build the backend Docker image
+│   └── requirements.txt# Python dependencies for the backend
 │
-├── frontend/
-│ ├── Dockerfile # Frontend container setup
-│ ├── requirements.txt # Frontend dependencies
-│ └── app.py # Streamlit UI application
+├── data/               # Data artifacts managed by DVC (not committed to Git)
+│   ├── book1.pdf       # Example source document
+│   ├── book1.json      # Processed text chunks from the PDF
+│   ├── documents.json  # Consolidated map of all document chunks
+│   ├── faiss_index.bin # The FAISS vector index
+│   └── ...             # .dvc pointer files are committed to Git
 │
-├── ingest.py # PDF → JSON processing script
-├── build_index.py # FAISS index builder
-├── docker-compose.yml # Multi-container orchestration
-└── README.md # This file
+├── frontend/           # Containerized Streamlit application
+│   ├── app.py          # The Streamlit web interface code
+│   ├── Dockerfile      # Instructions to build the frontend Docker image
+│   └── requirements.txt# Python dependencies for the frontend
+│
+├── .env                # Secret keys (e.g., GOOGLE_API_KEY), ignored by Git
+├── .gitignore          # Specifies files and directories for Git to ignore
+├── docker-compose.yml  # Defines and orchestrates all services (backend, frontend, redis, etc.)
+├── build_index.py      # Script to create the FAISS index from processed data
+├── ingest.py           # Script to process source PDFs into structured JSON
+└── README.md           # You are here!
 ```
+## 7. Getting Started
+
+Follow the steps below to set up and run the complete PromptCache system.
+
+Prerequisites
+
+Git
+
+Python 3.10+
+
+Docker & Docker Compose installed
+
 ---
 
-## 🚀 Getting Started
-
-Follow these steps to get the full PromptCache application running **locally** or on a **remote server**.
-
-### 🧩 Prerequisites
-
-- Git  
-- Python 3.10+  
-- Docker & Docker Compose  
-
----
-
-### 1️⃣ Clone the Repository
+Step 1: Clone the Repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/your-username/PromptCache.git
 cd PromptCache
 ```
 
-2️⃣ Set Up Data and Environment
+---
 
-Place your source PDF files (e.g., Harry Potter books) in the data/ directory.
+Step 2: Set Up the Environment
 
-Create and activate a virtual environment:
+Create and activate a virtual environment for local data processing:
+
 ```bash
 python -m venv venv
-# On macOS/Linux
 source venv/bin/activate
-# On Windows
-venv\Scripts\activate
-
-pip install pypdf sentence-transformers faiss-cpu dvc
+pip install -r backend/requirements.txt pypdf
 ```
-3️⃣ Ingest and Index the Data
 
-Run the following scripts (only once initially):
+---
+
+Step 3: Configure the API Key
+
+PromptCache uses the Google Gemini API for text generation.
+
+Copy the example environment file:
+
 ```bash
-# 1. Process PDFs into structured JSON
-python ingest.py
-
-# 2. Create the FAISS vector index
-python build_index.py
+cp .env.example .env
 ```
-4️⃣ Configure the Frontend
 
-Edit frontend/app.py and update the server address:
+Add your API key to .env:
+
 ```bash
-# frontend/app.py
-
-# If running locally:
-SERVER_IP_ADDRESS = "127.0.0.1"
-
-# If running remotely:
-SERVER_IP_ADDRESS = "<YOUR_SERVER_IP_ADDRESS>"
+GOOGLE_API_KEY="YOUR_API_KEY_HERE"
 ```
-5️⃣ Launch the Application
 
-With Docker running, start the entire stack:
+---
+
+Step 4: Build the Knowledge Base
+
+Place all your source PDFs into the data/ directory.
+
+Process and index them using the scripts provided:
+
+```bash
+python ingest.py         # Extract and chunk text
+python build_index.py    # Create FAISS index
+```
+
+---
+
+Step 5: Launch the Application
+
+Start all services using Docker Compose:
+
 ```bash
 docker-compose up --build
 ```
-This will:
+Once the containers initialize, you’ll see logs for backend, frontend, Redis, MLflow, Prometheus, and Grafana.
 
-Build Docker images for both frontend and backend
+---
 
-Start containers for Frontend, Backend, and Redis
+## 8. Accessing the Services
 
-Connect them over a shared Docker network
+| Component                    | URL                                                      |
+| ---------------------------- | -------------------------------------------------------- |
+| **Frontend (Streamlit App)** | [http://localhost:8501](http://localhost:8501)           |
+| **Backend API Docs**         | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| **MLflow Tracking UI**       | [http://localhost:5000](http://localhost:5000)           |
+| **Grafana Dashboard**        | [http://localhost:3000](http://localhost:1001)           |
+| **Prometheus Metrics**       | [http://localhost:9090](http://localhost:1000)           |
 
-6️⃣ Access the Application
-```bash
-Frontend UI: http://<YOUR_SERVER_IP_ADDRESS>:8501
-
-Backend API Docs: http://<YOUR_SERVER_IP_ADDRESS>:8000/docs
+You may need to configure Grafana’s data source to point to 
+```text
+http://prometheus:9090
 ```
-📈 Future Improvements
 
-PromptCache serves as a robust foundation. The following features are planned for enhancement:
+---
 
-Adaptive Compression: Use bfloat16 compression for embeddings in Redis to reduce memory.
+## 9. Future Improvements
 
-CI/CD Pipeline: Automate Docker builds and tests via GitHub Actions.
+CI/CD Pipeline: Integrate GitHub Actions for automated testing, builds, and deployment.
 
-Cloud Deployment: Support GCP (Cloud Run + Memorystore) and AWS (ECS + ElastiCache).
+Cloud Deployment: Deploy to GCP Cloud Run or AWS ECS for scalability and public access.
 
-Live Monitoring: Integrate Prometheus + Grafana for real-time performance dashboards.
+Advanced Caching: Add embedding compression (bfloat16) in Redis to reduce memory footprint.
 
-LLM Integration: Add a layer where retrieved context is fed into an LLM (e.g., GPT or LLaMA) for natural conversational answers.
+Streaming Generation: Enable token streaming from LLM for real-time responses.

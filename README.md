@@ -53,24 +53,24 @@ This hybrid caching mechanism can reduce query latency by **over 60%** and signi
 
 ```mermaid
 graph TD
-    subgraph "User Interface"
-        A[User] --> B{Frontend (Streamlit)};
+    subgraph User_Interface
+        A[User] --> B[Frontend: Streamlit]
     end
 
-    subgraph "Backend Services"
-        B --> C{Backend API (FastAPI)};
-        C -- "1. Check for similar prompt" --> D[Cache (Redis)];
-        D -- "2a. Cache Hit" --> C;
-        D -- "2b. Cache Miss" --> E[Retriever (FAISS)];
-        E -- "3. Retrieved Context" --> F[Generator (LLM API)];
-        F -- "4. Generated Answer" --> C;
-        C -- "5. Store new answer" --> D;
+    subgraph Backend_Services
+        B --> C[Backend API: FastAPI]
+        C -->|1. Check for similar prompt| D[Cache: Redis]
+        D -->|2a. Cache Hit| C
+        D -->|2b. Cache Miss| E[Retriever: FAISS]
+        E -->|3. Retrieved Context| F[Generator: LLM API]
+        F -->|4. Generated Answer| C
+        C -->|5. Store new answer| D
     end
-    
-    subgraph "MLOps & Monitoring"
-        C --> G[MLflow Tracking Server];
-        H[Prometheus] -- "Scrapes /metrics" --> C;
-        I[Grafana] -- "Visualizes metrics" --> H;
+
+    subgraph MLOps_and_Monitoring
+        C --> G[MLflow Tracking Server]
+        H[Prometheus] -->|Scrapes /metrics| C
+        I[Grafana] -->|Visualizes metrics| H
     end
 ```
 
@@ -86,6 +86,8 @@ graph TD
 | **Generative AI**    | Google Generative AI (Gemini)                                           |
 | **Data Processing**  | PyPDF, SentenceTransformers (thenlper/gte-large), FAISS, NumPy          |
 | **MLOps & Tooling**  | Docker, Docker Compose, DVC, MLflow, Prometheus, Grafana, python-dotenv |
+
+---
 
 ## 6. Project Structure
 
@@ -125,6 +127,9 @@ PromptCache/
 ├── ingest.py           # Script to process source PDFs into structured JSON
 └── README.md           # You are here!
 ```
+
+---
+
 ## 7. Getting Started
 
 Follow the steps below to set up and run the complete PromptCache system.

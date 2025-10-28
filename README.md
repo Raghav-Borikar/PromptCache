@@ -117,7 +117,7 @@ Follow these steps to get the full PromptCache application running **locally** o
 ### 🧩 Prerequisites
 
 - Git  
-- Python 3.8+  
+- Python 3.10+  
 - Docker & Docker Compose  
 
 ---
@@ -127,13 +127,14 @@ Follow these steps to get the full PromptCache application running **locally** o
 ```bash
 git clone <your-repository-url>
 cd PromptCache
+```
 
 2️⃣ Set Up Data and Environment
 
 Place your source PDF files (e.g., Harry Potter books) in the data/ directory.
 
 Create and activate a virtual environment:
-
+```bash
 python -m venv venv
 # On macOS/Linux
 source venv/bin/activate
@@ -141,21 +142,21 @@ source venv/bin/activate
 venv\Scripts\activate
 
 pip install pypdf sentence-transformers faiss-cpu dvc
-
+```
 3️⃣ Ingest and Index the Data
 
 Run the following scripts (only once initially):
-
+```bash
 # 1. Process PDFs into structured JSON
 python ingest.py
 
 # 2. Create the FAISS vector index
 python build_index.py
-
+```
 4️⃣ Configure the Frontend
 
 Edit frontend/app.py and update the server address:
-
+```bash
 # frontend/app.py
 
 # If running locally:
@@ -163,13 +164,13 @@ SERVER_IP_ADDRESS = "127.0.0.1"
 
 # If running remotely:
 SERVER_IP_ADDRESS = "<YOUR_SERVER_IP_ADDRESS>"
-
+```
 5️⃣ Launch the Application
 
 With Docker running, start the entire stack:
-
+```bash
 docker-compose up --build
-
+```
 This will:
 
 Build Docker images for both frontend and backend
@@ -179,11 +180,11 @@ Start containers for Frontend, Backend, and Redis
 Connect them over a shared Docker network
 
 6️⃣ Access the Application
-
+```bash
 Frontend UI: http://<YOUR_SERVER_IP_ADDRESS>:8501
 
 Backend API Docs: http://<YOUR_SERVER_IP_ADDRESS>:8000/docs
-
+```
 📈 Future Improvements
 
 PromptCache serves as a robust foundation. The following features are planned for enhancement:

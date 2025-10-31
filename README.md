@@ -200,13 +200,6 @@ pip install -r backend/requirements.txt pypdf
 Step 3: Configure the API Key
 
 PromptCache uses the Google Gemini API for text generation.
-
-Copy the example environment file:
-
-```bash
-cp .env.example .env
-```
-
 Add your API key to .env:
 
 ```bash

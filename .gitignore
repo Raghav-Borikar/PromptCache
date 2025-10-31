@@ -4,6 +4,7 @@ promptcache/
 # DVC local cache (important!)
 .dvc/cache
 
+/data
 # Python cache files
 __pycache__/
 *.pyc

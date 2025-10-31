@@ -1,5 +1,0 @@
-outs:
-- md5: 6c083d05295c70fd70a9ace370b2056d
-  size: 20992045
-  hash: md5
-  path: faiss_index.bin
